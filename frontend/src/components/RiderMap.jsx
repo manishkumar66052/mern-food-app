@@ -2,14 +2,9 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet"
 import { useState, useEffect } from "react";
 import L from "leaflet";
 
-const riderIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/1046/1046784.png",
-  iconSize: [40, 40]
-});
-
 const restaurantIcon = new L.Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/3075/3075977.png",
-  iconSize: [35, 35]
+  iconSize: [40, 40]
 });
 
 const userIcon = new L.Icon({
@@ -27,8 +22,9 @@ function RiderMap() {
   const [distance, setDistance] = useState(2.0);
   const [eta, setEta] = useState(12);
 
-  // Detect real user GPS
+  const [rotation, setRotation] = useState(0);
 
+  // Detect real user GPS
   useEffect(() => {
 
     if (navigator.geolocation) {
@@ -47,28 +43,37 @@ function RiderMap() {
   }, []);
 
   // Rider movement simulation
-
   useEffect(() => {
 
     const interval = setInterval(() => {
 
-      setRiderLocation(prev => [
-        prev[0] - 0.0001,
-        prev[1] - 0.0001
-      ]);
+      setRiderLocation((prev) => {
 
-      setDistance(prev => {
+        const newLat = prev[0] - 0.00015;
+        const newLng = prev[1] - 0.00015;
+
+        // calculate direction
+        const angle =
+          Math.atan2(userLocation[1] - newLng, userLocation[0] - newLat) *
+          (180 / Math.PI);
+
+        setRotation(angle);
+
+        return [newLat, newLng];
+      });
+
+      setDistance((prev) => {
         const newDist = Math.max(prev - 0.1, 0);
         return parseFloat(newDist.toFixed(1));
       });
 
-      setEta(prev => Math.max(prev - 1, 0));
+      setEta((prev) => Math.max(prev - 1, 0));
 
     }, 2000);
 
     return () => clearInterval(interval);
 
-  }, []);
+  }, [userLocation]);
 
   const route = [
     restaurant,
@@ -76,10 +81,15 @@ function RiderMap() {
     userLocation
   ];
 
+  // Rotating rider icon
+  const riderIcon = L.divIcon({
+    className: "",
+    html: `<img src="https://cdn-icons-png.flaticon.com/512/2972/2972185.png"
+           style="width:45px; transform: rotate(${rotation}deg);" />`
+  });
+
   return (
     <div>
-
-      {/* Distance + ETA */}
 
       <div className="bg-gray-700 p-3 rounded mb-3 text-sm flex justify-between">
         <span>Distance: {distance} km</span>
@@ -92,29 +102,19 @@ function RiderMap() {
         style={{ height: "400px", width: "100%" }}
       >
 
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {/* Restaurant */}
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
         <Marker position={restaurant} icon={restaurantIcon}>
           <Popup>Restaurant</Popup>
         </Marker>
 
-        {/* Rider */}
-
         <Marker position={riderLocation} icon={riderIcon}>
           <Popup>Delivery Rider</Popup>
         </Marker>
 
-        {/* User */}
-
         <Marker position={userLocation} icon={userIcon}>
           <Popup>Your Location</Popup>
         </Marker>
-
-        {/* Route Line */}
 
         <Polyline
           positions={route}

@@ -1,26 +1,66 @@
 import { useContext, useState, useEffect } from "react";
 import { StoreContext } from "../context/StoreContext";
 import { jsPDF } from "jspdf";
-
 import RiderMap from "../components/RiderMap";
 
 function OrderSuccess() {
 
   const { cartItems } = useContext(StoreContext);
 
-  const [status, setStatus] = useState("Preparing");
+  const [status, setStatus] = useState("Order Placed");
+
+  const [countdown, setCountdown] = useState(20);
+  const [deliveryTime, setDeliveryTime] = useState(60);
+
+  // RANDOM RIDERS
+  const riders = [
+    { name: "Rahul Kumar", vehicle: "UP15 AB 2345", phone: "9876543210" },
+    { name: "Amit Singh", vehicle: "UP14 XY 9087", phone: "9898123456" },
+    { name: "Vikram Sharma", vehicle: "DL8S AT 5522", phone: "9812345678" },
+    { name: "Rohit Verma", vehicle: "HR26 DK 3321", phone: "9865321478" },
+    { name: "Sandeep Yadav", vehicle: "UP16 ZT 7654", phone: "9890012345" },
+    { name: "Mohit Chauhan", vehicle: "DL5C RT 8877", phone: "9819988776" }
+  ];
+
+  const [rider] = useState(
+    riders[Math.floor(Math.random() * riders.length)]
+  );
 
   useEffect(() => {
 
-    const timer1 = setTimeout(() => setStatus("Out for Delivery"), 6000);
-    const timer2 = setTimeout(() => setStatus("Delivered"), 12000);
+    const timer = setInterval(() => {
+
+      setDeliveryTime(prev => Math.max(prev - 1, 0));
+
+      setCountdown(prev => {
+        if (prev === 1) return 20;
+        return prev - 1;
+      });
+
+    }, 1000);
+
+    const step1 = setTimeout(() => setStatus("Preparing"), 20000);
+    const step2 = setTimeout(() => setStatus("Out for Delivery"), 40000);
+    const step3 = setTimeout(() => setStatus("Delivered"), 60000);
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      clearInterval(timer);
+      clearTimeout(step1);
+      clearTimeout(step2);
+      clearTimeout(step3);
     };
 
   }, []);
+
+  // PROGRESS STEP
+  const currentStep =
+    status === "Preparing"
+      ? 1
+      : status === "Out for Delivery"
+      ? 2
+      : status === "Delivered"
+      ? 3
+      : 0;
 
   const foodList = [
     { id: 1, name: "Burger", price: 120 },
@@ -75,8 +115,6 @@ function OrderSuccess() {
   return (
     <div className="bg-gray-900 min-h-screen text-white">
 
-    
-
       <div className="p-10">
 
         <h1 className="text-4xl text-green-400 mb-8">
@@ -92,6 +130,33 @@ function OrderSuccess() {
             <h2 className="text-2xl text-orange-400 mb-4">
               Order Bill
             </h2>
+
+            <div className="mb-4 text-sm text-gray-400 flex justify-between">
+              <span>Next Update: {countdown}s</span>
+              <span>Delivery In: {deliveryTime}s</span>
+            </div>
+
+            {/* PROGRESS BAR */}
+
+            <div className="mb-6">
+
+              <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
+
+                <div
+                  className="bg-green-500 h-3 transition-all duration-700"
+                  style={{ width: `${(currentStep / 3) * 100}%` }}
+                ></div>
+
+              </div>
+
+              <div className="flex justify-between text-xs mt-2 text-gray-400">
+                <span>Placed</span>
+                <span>Preparing</span>
+                <span>On Way</span>
+                <span>Delivered</span>
+              </div>
+
+            </div>
 
             {cartFoods.map((food) => (
 
@@ -140,36 +205,6 @@ function OrderSuccess() {
               Download PDF Bill
             </button>
 
-            {/* ORDER STATUS */}
-
-            <div className="mt-8">
-
-              <h3 className="text-xl text-orange-400 mb-3">
-                Order Status
-              </h3>
-
-              <div className="flex flex-col gap-2 text-sm">
-
-                <span className={status ? "text-green-400" : ""}>
-                  ✅ Order Placed
-                </span>
-
-                <span className={status === "Preparing" || status === "Out for Delivery" || status === "Delivered" ? "text-green-400" : ""}>
-                  🍳 Preparing
-                </span>
-
-                <span className={status === "Out for Delivery" || status === "Delivered" ? "text-green-400" : ""}>
-                  🛵 Out for Delivery
-                </span>
-
-                <span className={status === "Delivered" ? "text-green-400" : ""}>
-                  📦 Delivered
-                </span>
-
-              </div>
-
-            </div>
-
           </div>
 
           {/* RIGHT SIDE */}
@@ -180,25 +215,17 @@ function OrderSuccess() {
               Delivery Tracking
             </h2>
 
-            {/* RIDER INFO */}
-
             <div className="bg-gray-700 p-4 rounded-lg mb-4">
 
               <p className="text-lg font-semibold">
-                Rider: Rahul Kumar
+                Rider: {rider.name}
               </p>
 
-              <p>
-                Vehicle: UP15 AB 2345
-              </p>
+              <p>Vehicle: {rider.vehicle}</p>
 
-              <p>
-                Phone: 98xxxxxxx
-              </p>
+              <p>Phone: {rider.phone}</p>
 
             </div>
-
-            {/* MAP */}
 
             <RiderMap />
 
